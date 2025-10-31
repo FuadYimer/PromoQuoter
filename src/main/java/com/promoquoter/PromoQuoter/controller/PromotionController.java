@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/promotions")
+@RequestMapping("/api/v1/promotions")
 @RequiredArgsConstructor
 public class PromotionController {
 
