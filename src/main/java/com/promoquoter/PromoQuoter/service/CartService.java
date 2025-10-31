@@ -7,17 +7,16 @@ import com.promoquoter.PromoQuoter.domain.promotion.PromotionStrategy;
 import com.promoquoter.PromoQuoter.dto.CartRequest;
 import com.promoquoter.PromoQuoter.dto.OrderResponse;
 import com.promoquoter.PromoQuoter.dto.QuoteResponse;
+import com.promoquoter.PromoQuoter.exception.OutOfStockException;
 import com.promoquoter.PromoQuoter.exception.ValidationException;
 import com.promoquoter.PromoQuoter.repository.OrderRepository;
 import com.promoquoter.PromoQuoter.repository.ProductRepository;
 import com.promoquoter.PromoQuoter.repository.PromotionRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,7 +26,8 @@ public class CartService {
     private final OrderRepository orderRepo;
     private final PromotionFactory promotionFactory;
 
-    public CartService(ProductRepository productRepo, PromotionRepository promoRepo, OrderRepository orderRepo, PromotionFactory promotionFactory) {
+    public CartService(ProductRepository productRepo, PromotionRepository promoRepo,
+                       OrderRepository orderRepo, PromotionFactory promotionFactory) {
         this.productRepo = productRepo;
         this.promoRepo = promoRepo;
         this.orderRepo = orderRepo;
@@ -46,15 +46,12 @@ public class CartService {
         Map<UUID, Product> productMap = productRepo.findAllById(productIds).stream()
                 .collect(Collectors.toMap(Product::getId, p -> p));
 
-        //Load promotions and build strategies
         List<Promotion> promotions = promoRepo.findAll();
         List<PromotionStrategy> strategies = promotionFactory.createStrategies(promotions);
 
-        // Apply promotions
         PromotionEngine engine = new PromotionEngine(strategies);
         Quote quote = engine.applyPromotions(request.getItems(), productMap);
 
-        //  Map Quote → QuoteResponse
         QuoteResponse response = new QuoteResponse();
         response.setItems(quote.getItems());
         response.setTotal(quote.getTotal());
@@ -63,15 +60,18 @@ public class CartService {
         return response;
     }
 
-
     @Transactional
     public OrderResponse confirm(CartRequest request, String idempotencyKey) {
-        //Validate cart items
         if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
             throw new ValidationException("Cart must contain at least one item.");
         }
 
-        // Load products
+        if (idempotencyKey != null) {
+            Optional<Order> existing = orderRepo.findByIdempotencyKey(idempotencyKey);
+            if (existing.isPresent()) {
+                return mapToResponse(existing.get());
+            }
+        }
         List<UUID> productIds = request.getItems().stream()
                 .map(CartItem::getProductId)
                 .toList();
@@ -79,17 +79,29 @@ public class CartService {
         Map<UUID, Product> productMap = productRepo.findAllById(productIds).stream()
                 .collect(Collectors.toMap(Product::getId, p -> p));
 
-        // Step 3: Load promotions and build strategies
         List<Promotion> promotions = promoRepo.findAll();
         List<PromotionStrategy> strategies = promotionFactory.createStrategies(promotions);
-
-        // Apply promotions
         PromotionEngine engine = new PromotionEngine(strategies);
         Quote quote = engine.applyPromotions(request.getItems(), productMap);
 
-        // Create and persist Order
+        for (CartItem item : request.getItems()) {
+            UUID productId = item.getProductId();
+            int requestedQty = item.getQuantity();
+
+            Product product = productMap.get(productId);
+            if (product == null) {
+                throw new ValidationException("Product not found: " + productId);
+            }
+
+            if (product.getStock() < requestedQty) {
+                throw new OutOfStockException("Insufficient stock for product " + product.getName());
+            }
+
+            product.setStock(product.getStock() - requestedQty);
+            productRepo.save(product);
+        }
+
         Order order = new Order();
-//        order.setId(UUID.randomUUID());
         order.setItems(mapToOrderItems(quote.getItems()));
         order.setTotal(quote.getTotal());
         order.setAppliedPromotions(quote.getAppliedPromotions());
@@ -98,15 +110,7 @@ public class CartService {
 
         orderRepo.save(order);
 
-        //Build response DTO
-        OrderResponse response = new OrderResponse();
-        response.setOrderId(order.getId());
-        response.setItems(quote.getItems());
-        response.setTotal(order.getTotal());
-        response.setAppliedPromotions(order.getAppliedPromotions());
-        response.setCreatedAt(order.getCreatedAt());
-
-        return response;
+        return mapToResponse(order);
     }
 
     private List<OrderItem> mapToOrderItems(List<QuoteItem> quoteItems) {
@@ -120,6 +124,28 @@ public class CartService {
             o.setFinalPrice(q.getFinalPrice());
             return o;
         }).toList();
+    }
+
+    private OrderResponse mapToResponse(Order order) {
+        OrderResponse response = new OrderResponse();
+        response.setOrderId(order.getId());
+
+        response.setItems(order.getItems().stream()
+                .map(item -> new QuoteItem(
+                        item.getProductId(),
+                        item.getName(),
+                        item.getQuantity(),
+                        item.getUnitPrice(),
+                        item.getDiscount()
+                ))
+                .toList()
+        );
+
+        response.setTotal(order.getTotal());
+        response.setAppliedPromotions(order.getAppliedPromotions());
+        response.setCreatedAt(order.getCreatedAt());
+
+        return response;
     }
 
 
