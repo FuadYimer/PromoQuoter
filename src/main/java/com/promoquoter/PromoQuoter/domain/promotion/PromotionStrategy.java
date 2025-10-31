@@ -3,7 +3,6 @@ package com.promoquoter.PromoQuoter.domain.promotion;
 import com.promoquoter.PromoQuoter.domain.model.CartItem;
 import com.promoquoter.PromoQuoter.domain.model.Product;
 import com.promoquoter.PromoQuoter.domain.model.Quote;
-import com.promoquoter.PromoQuoter.dto.QuoteResponse;
 
 import java.util.List;
 import java.util.Map;

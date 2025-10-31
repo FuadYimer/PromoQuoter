@@ -4,8 +4,6 @@ import com.promoquoter.PromoQuoter.domain.model.CartItem;
 import com.promoquoter.PromoQuoter.domain.model.Product;
 import com.promoquoter.PromoQuoter.domain.model.Quote;
 import com.promoquoter.PromoQuoter.domain.model.QuoteItem;
-import com.promoquoter.PromoQuoter.dto.QuoteResponse;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
