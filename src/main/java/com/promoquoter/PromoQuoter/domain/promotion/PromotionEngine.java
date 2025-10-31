@@ -28,7 +28,6 @@ public class PromotionEngine {
             appliedPromotions.addAll(partial.getAppliedPromotions());
         }
 
-        // If no promotions applied, fall back to base pricing
         if (allItems.isEmpty()) {
             for (CartItem cartItem : items) {
                 Product product = products.get(cartItem.getProductId());
