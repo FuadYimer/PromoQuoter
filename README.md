@@ -115,6 +115,6 @@ curl --location 'http://localhost:8081/api/v1/cart/confirm' --header 'Content-Ty
 ## Tech Stack
 - Spring Boot (Java 22)
 - Spring Data JPA
-- H2 / PostgreSQL
+- H2
 - Lombok
 - Maven 

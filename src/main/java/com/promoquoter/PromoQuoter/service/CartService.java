@@ -14,6 +14,7 @@ import com.promoquoter.PromoQuoter.repository.ProductRepository;
 import com.promoquoter.PromoQuoter.repository.PromotionRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
 
 import java.util.*;
@@ -147,6 +148,4 @@ public class CartService {
 
         return response;
     }
-
-
 }
