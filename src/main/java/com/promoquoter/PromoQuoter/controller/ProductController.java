@@ -20,7 +20,6 @@ public class ProductController {
 
     @PostMapping
     public ResponseEntity<Void> createProducts(@RequestBody List<ProductDto> products) {
-        System.out.println("Here-=======>");
         productService.createProducts(products);
         return ResponseEntity.ok().build();
     }
