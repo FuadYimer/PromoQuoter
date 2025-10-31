@@ -30,24 +30,45 @@ http://localhost:8081
 
 ### 1. Create Products
 ```bash
-curl --location 'http://localhost:8081/api/v1/products' --header 'Content-Type: application/json' --data '[
-  {
-    "name": "Laptop",
-    "category": "ELECTRONICS",
-    "price": 1000.00,
-    "stock": 5
-  }
+curl --location 'http://localhost:8082/api/v1/products' \
+--header 'Content-Type: application/json' \
+--data '[
+    {
+        "name": "Laptop",
+        "category": "ELECTRONICS",
+        "price": 1000.00,
+        "stock": 10
+    },
+    {
+        "name": "Notebook",
+        "category": "ELECTRONICS",
+        "price": 50.00,
+        "stock": 100
+    },
+    {
+        "name": "T-Shirt",
+        "category": "CLOTHING",
+        "price": 799.00,
+        "stock": 100
+    }
 ]'
 ```
 
 ### 2. Create Promotions
 ```bash
-curl --location 'http://localhost:8081/api/v1/promotions' --header 'Content-Type: application/json' --data '[
-  {
-    "type": "PERCENT_OFF_CATEGORY",
-    "priority": 1,
-    "configJson": "{"category":"ELECTRONICS","percent":10}"
-  }
+curl --location 'http://localhost:8082/api/v1/promotions' \
+--header 'Content-Type: application/json' \
+--data '[
+    {
+        "type": "PERCENT_OFF_CATEGORY",
+        "priority": 1,
+        "configJson": "{\"category\":\"ELECTRONICS\",\"percent\":10}"
+    },
+    {
+        "type": "BUY_X_GET_Y",
+        "priority": 1,
+        "configJson": "{\"productId\":\"48747518-ac51-438e-a3ba-11e85a9c2aa6\",\"buyQty\":2,\"freeQty\":1}"
+    }
 ]'
 ```
 
